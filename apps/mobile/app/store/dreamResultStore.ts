@@ -1,22 +1,7 @@
 import { create } from 'zustand';
+import { DreamAPI } from '@morpheo/types';
 
-export type DreamData = {
-    id: string;
-    advice: string;
-    culturalReferences: Record<string, string>;
-    'dall-e-prompt': string;
-    emotions: string[];
-    keywords: string[];
-    'midjourney-prompt': string;
-    summary: string;
-    emoji: string;
-    dalleImagePath: string | undefined;
-    description: string;
-    title: string;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
-};
+export type DreamData = DreamAPI;
 
 type DreamState = {
     rawDreamText: string;

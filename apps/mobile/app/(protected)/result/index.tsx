@@ -136,7 +136,7 @@ export default function InterpretationScreen() {
                 return;
             }
             const token = await getToken();
-            const imagePath = await generateAndSaveDalleImage(dreamData.id, dreamData['dall-e-prompt'], token!);
+            const imagePath = await generateAndSaveDalleImage(dreamData.id, dreamData.dallEPrompt, token!);
             if (imagePath) {
                 // Optionally check if the image has already been set
                 if (dreamData.dalleImagePath !== imagePath) {

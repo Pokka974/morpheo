@@ -1,5 +1,6 @@
 // utils/rateLimiter.ts
-import { PLAN_LIMITS } from '../config/plans';
+import { PLAN_LIMITS } from '@morpheo/constants';
+import { TIME_CONSTANTS } from '@morpheo/utils';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -13,7 +14,7 @@ export async function checkRateLimit(userId: string) {
             plan: 'BASIC',
             periodStart: new Date(),
             periodEnd: new Date(
-                Date.now() + PLAN_LIMITS.BASIC.windowDays * 86400 * 1000,
+                Date.now() + PLAN_LIMITS.BASIC.windowDays * TIME_CONSTANTS.MILLISECONDS_PER_DAY,
             ),
             requestCount: 0,
         },
@@ -33,7 +34,7 @@ export async function checkRateLimit(userId: string) {
                 periodStart: now,
                 periodEnd: new Date(
                     now.getTime() +
-                        PLAN_LIMITS[currentPlan].windowDays * 86400 * 1000,
+                        PLAN_LIMITS[currentPlan].windowDays * TIME_CONSTANTS.MILLISECONDS_PER_DAY,
                 ),
             },
         });
