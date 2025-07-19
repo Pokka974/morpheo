@@ -34,7 +34,9 @@ app.use(
 );
 app.use(clerkMiddleware());
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Swagger UI setup with type assertion to bypass conflicts
+app.use('/api-docs', swaggerUi.serve as any);
+app.get('/api-docs', swaggerUi.setup(swaggerDocument) as any);
 // app.use('/webhook', webhookRouter);
 
 app.use('/chatgpt', chatGptRouter);

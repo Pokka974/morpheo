@@ -80,7 +80,7 @@ export const exportUserData = async (req: Request, res: Response) => {
             dataRetention: {
                 dreams: dreams.length,
             },
-            dreams: dreams.map(dream => ({
+            dreams: dreams.map((dream: any) => ({
                 id: dream.id,
                 title: dream.title,
                 description: dream.description,

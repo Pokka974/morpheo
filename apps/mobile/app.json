@@ -1,74 +1,67 @@
 {
-    "expo": {
-        "name": "morpheoai",
-        "slug": "morpheo-ai",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/images/icon2.png",
-        "scheme": "myapp",
-        "userInterfaceStyle": "automatic",
-        "newArchEnabled": true,
-        "assetBundlePatterns": ["assets/images/*", "assets/fonts/*"],
-        "extra": {
-            "apiUrl": "http://192.168.1.20:3000",
-            // "apiUrl": "https://ddreamer-api.onrender.com",
-            "router": {
-                "origin": false
-            },
-            "eas": {
-                "projectId": "07c5fa93-d28a-4d9c-8135-af1246b990f4"
-            }
-        },
-        "ios": {
-            "usesIcloudStorage": true,
-            "infoPlist": {
-                "NSPhotoLibraryUsageDescription": "We need access to save your dream images",
-                "NSPhotoLibraryAddUsageDescription": "We need access to save your dream images",
-                "ITSAppUsesNonExemptEncryption": false
-            },
-            "supportsTablet": true,
-            "bundleIdentifier": "com.pokka974.morpheoaimobile"
-        },
-        "android": {
-            "permissions": [
-                "WRITE_EXTERNAL_STORAGE",
-                "READ_EXTERNAL_STORAGE",
-                "android.permission.READ_MEDIA_IMAGES",
-                "android.permission.READ_MEDIA_VIDEO"
-            ],
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/images/adaptive-icon.png",
-                "backgroundColor": "#ffffff"
-            },
-            "package": "com.pokka974.morpheoaimobile"
-        },
-        "web": {
-            "bundler": "metro",
-            "output": "static",
-            "favicon": "./assets/images/favicon.png"
-        },
-        "plugins": [
-            "expo-router",
-            [
-                "expo-splash-screen",
-                {
-                    "image": "./assets/images/splash-icon.png",
-                    "imageWidth": 200,
-                    "resizeMode": "contain",
-                    "backgroundColor": "#ffffff"
-                }
-            ],
-            [
-                "expo-dev-launcher",
-                {
-                    "launchMode": "most-recent"
-                }
-            ],
-            "expo-font"
-        ],
-        "experiments": {
-            "typedRoutes": true
-        },
-        "owner": "pokka97410"
-    }
+  "expo": {
+    "name": "morpheoai",
+    "slug": "morpheo-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon2.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["assets/images/*", "assets/fonts/*"],
+    "extra": {
+      "apiUrl": "http://192.168.1.20:3000",
+      // "apiUrl": "https://ddreamer-api.onrender.com",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "07c5fa93-d28a-4d9c-8135-af1246b990f4"
+      }
+    },
+    "ios": {
+      "usesIcloudStorage": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to save your dream images",
+        "NSPhotoLibraryAddUsageDescription": "We need access to save your dream images",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pokka974.morpheoaimobile"
+    },
+    "android": {
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.pokka974.morpheoaimobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "owner": "pokka97410"
+  }
 }

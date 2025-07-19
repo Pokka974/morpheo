@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
+import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import GeneralLinearBackground from '@/app/components/GeneralLinearBackground';
 import OAuthButtons from '../components/OAuthButtons';
 import AuthForm, { AuthFormData } from '../components/AuthForm';
@@ -52,7 +54,7 @@ const AuthScreen = () => {
                 });
                 if (signInAttempt?.status === 'complete') {
                     await setActive!({ session: signInAttempt.createdSessionId });
-                    toggleMode();
+                    router.replace('/logdream');
                 }
             } catch (error: any) {
                 setErrorMessage(error.errors?.[0]?.message || 'Login failed');
@@ -83,7 +85,7 @@ const AuthScreen = () => {
 
             if (completeSignUp.status === 'complete') {
                 await setActive({ session: completeSignUp.createdSessionId });
-                toggleMode();
+                router.replace('/logdream');
             }
         } catch (error: any) {
             setErrorMessage(error.errors?.[0]?.message || 'Verification failed');
@@ -92,19 +94,31 @@ const AuthScreen = () => {
 
     const handleAppleOAuth = async () => {
         try {
-            const { createdSessionId, setActive } = await appleSSO({ strategy: 'oauth_apple' });
-            if (createdSessionId) setActive!({ session: createdSessionId });
+            const { createdSessionId, setActive } = await appleSSO({ 
+                strategy: 'oauth_apple'
+            });
+            if (createdSessionId) {
+                await setActive!({ session: createdSessionId });
+                router.replace('/logdream');
+            }
         } catch (error) {
-            console.error(error);
+            console.error('Apple OAuth error:', error);
+            setErrorMessage('Apple authentication failed. Please try again.');
         }
     };
 
     const handleGoogleOAuth = async () => {
         try {
-            const { createdSessionId, setActive } = await googleSSO({ strategy: 'oauth_google' });
-            if (createdSessionId) setActive!({ session: createdSessionId });
+            const { createdSessionId, setActive } = await googleSSO({ 
+                strategy: 'oauth_google'
+            });
+            if (createdSessionId) {
+                await setActive!({ session: createdSessionId });
+                router.replace('/logdream');
+            }
         } catch (err) {
-            console.error(JSON.stringify(err, null, 2));
+            console.error('Google OAuth error:', err);
+            setErrorMessage('Google authentication failed. Please try again.');
         }
     };
 
