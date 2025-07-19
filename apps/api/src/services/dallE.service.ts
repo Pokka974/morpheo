@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '.prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import { OpenAI } from 'openai';
 import { logError, logInfo } from './logger.service';

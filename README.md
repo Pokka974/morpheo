@@ -36,8 +36,8 @@ morpheo/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** 18+ and **npm**
-- **Expo CLI**: `npm install -g @expo/cli`
+- **Node.js** 18+ and **yarn**
+- **Expo CLI**: `yarn global add @expo/cli`
 - **iOS Simulator** (macOS) or **Android Studio** for mobile development
 
 ### Installation
@@ -50,7 +50,7 @@ morpheo/
 
 2. **Install dependencies**
    ```bash
-   npm install
+   yarn install
    ```
 
 3. **Set up environment variables**
@@ -71,56 +71,56 @@ morpheo/
 
 ```bash
 # Start both API and mobile in development
-npm run dev
+yarn dev
 
 # Start individual applications
-npm run api          # Start backend API
-npm run mobile       # Start mobile app
+yarn api          # Start backend API
+yarn mobile       # Start mobile app
 
 # Build applications
-npm run build:api    # Build backend
-npm run build:mobile # Build mobile app
+yarn build:api    # Build backend
+yarn build:mobile # Build mobile app
 
 # Run tests
-nx test api          # Test backend
-nx test mobile       # Test mobile app
+yarn nx test api          # Test backend
+yarn nx test mobile       # Test mobile app
 
 # Lint code
-nx lint api          # Lint backend
-nx lint mobile       # Lint mobile app
+yarn nx lint api          # Lint backend
+yarn nx lint mobile       # Lint mobile app
 
 # Database operations
-npm run prisma       # Open Prisma Studio
-npm run db:migrate   # Run database migrations
-npm run db:generate  # Generate Prisma client
+yarn prisma       # Open Prisma Studio
+yarn db:migrate   # Run database migrations
+yarn db:generate  # Generate Prisma client
 ```
 
 ### Backend Development (`apps/api`)
 
 ```bash
 # Start development server
-nx serve api
+yarn nx serve api
 
 # View API documentation
 # Visit http://localhost:3000/api-docs
 
 # Database management
-nx run api:prisma        # Open Prisma Studio
-nx run api:db:migrate    # Run migrations
+yarn nx run api:prisma        # Open Prisma Studio
+yarn nx run api:db:migrate    # Run migrations
 ```
 
 ### Mobile Development (`apps/mobile`)
 
 ```bash
 # Start Expo development server
-nx serve mobile
+yarn nx serve mobile
 
 # Run on specific platforms
-nx run-ios mobile      # iOS simulator
-nx run-android mobile  # Android emulator
+yarn nx run-ios mobile      # iOS simulator
+yarn nx run-android mobile  # Android emulator
 
 # Build for production
-nx build mobile
+yarn nx build mobile
 ```
 
 ## 🌟 Features
@@ -220,7 +220,7 @@ apps/
 ### Backend Deployment
 ```bash
 # Build for production
-nx build api
+yarn nx build api
 
 # Deploy to your preferred platform
 # (Vercel, Railway, Heroku, etc.)
@@ -229,7 +229,7 @@ nx build api
 ### Mobile App Deployment
 ```bash
 # Build for app stores
-nx build mobile
+yarn nx build mobile
 
 # iOS
 eas build --platform ios
