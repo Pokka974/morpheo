@@ -11,6 +11,7 @@ import chatGptRouter from './routes/chatgpt.route';
 import dallERouter from './routes/dallE.router';
 // import webhookRouter from './routes/webhook.route';
 import dreamRouter from './routes/dream.route';
+import userRouter from './routes/user.route';
 import { clerkMiddleware } from '@clerk/express';
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/chatgpt', chatGptRouter);
 app.use('/dalle', dallERouter);
 app.use('/dreams', dreamRouter);
+app.use('/user', userRouter);
 
 app.listen(port, () => {
     logInfo(`Server is running on http://localhost:${port}`);

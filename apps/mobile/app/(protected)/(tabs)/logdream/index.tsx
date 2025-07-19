@@ -110,7 +110,7 @@ const index = () => {
                 <ScrollView contentContainerStyle={{ flex: 1 }} keyboardShouldPersistTaps="handled">
                     <View className="flex-1 p-6 justify-center">
                         <Animated.View
-                            className="bg-white rounded-2xl overflow-hidden"
+                            className="bg-white rounded-xl overflow-hidden shadow-sm"
                             style={{
                                 height: inputHeight,
                                 maxHeight: '80%',
@@ -120,7 +120,7 @@ const index = () => {
                             <View className="flex-1 flex-row">
                                 {/* Text Input Area */}
                                 <TextInput
-                                    className="flex-1 p-4 text-base"
+                                    className="flex-1 p-4 text-base font-nunito"
                                     placeholder="Write down your dream in as much detail as you remember..."
                                     placeholderTextColor="#94a3b8"
                                     multiline

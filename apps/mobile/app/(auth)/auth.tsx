@@ -127,14 +127,14 @@ const AuthScreen = () => {
                     <View className="gap-5 mx-10">
                         <Text className="text-2xl font-nunito text-center text-white mt-5">or</Text>
 
-                        <Pressable
-                            className="flex-row items-center justify-center p-3 gap-2.5 rounded-md border border-lightBorder"
+                        <Button 
+                            className="bg-white rounded-xl p-4 shadow-sm border-0"
                             onPress={toggleMode}
                         >
-                            <Text className="font-nunito text-xl">
+                            <Text className="font-nunito text-xl text-gray-800 font-semibold">
                                 {mode === 'login' ? 'Create an account' : 'Log in'}
                             </Text>
-                        </Pressable>
+                        </Button>
 
                         <OAuthButtons
                             handleAppleOAuth={handleAppleOAuth}

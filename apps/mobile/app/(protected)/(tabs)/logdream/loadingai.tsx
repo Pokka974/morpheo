@@ -20,7 +20,7 @@ export default function LoadingScreen() {
     return (
         <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text className="text-accent mt-4 text-lg">Analyzing your dream...</Text>
+            <Text className="font-nunito text-gray-800 mt-4 text-lg">Analyzing your dream...</Text>
         </View>
     );
 }

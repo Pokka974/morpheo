@@ -1,6 +1,7 @@
-import { View, Text, Platform, Pressable } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { Button, XStack } from 'tamagui';
 
 interface OAuthButtonsProps {
     handleAppleOAuth: () => void;
@@ -11,24 +12,28 @@ interface OAuthButtonsProps {
 const OAuthButtons: React.FC<OAuthButtonsProps> = ({ handleAppleOAuth, handleGoogleOAuth, openLink }) => (
     <View className="gap-5">
         {Platform.OS === 'ios' && (
-            <Pressable
-                className="flex-row items-center justify-center p-3 gap-2.5 rounded-md border border-lightBorder"
+            <Button
+                className="bg-white rounded-xl p-4 shadow-sm border-0"
                 onPress={handleAppleOAuth}
             >
-                <Ionicons name="logo-apple" size={24} color="black" />
-                <Text className="font-nunito text-xl">Continue with Apple</Text>
-            </Pressable>
+                <XStack alignItems="center" gap="$2">
+                    <Ionicons name="logo-apple" size={24} color="black" />
+                    <Text className="font-nunito text-xl text-gray-800 font-semibold">Continue with Apple</Text>
+                </XStack>
+            </Button>
         )}
 
-        <Pressable
-            className="flex-row items-center justify-center p-3 gap-2.5 rounded-md border border-lightBorder"
+        <Button
+            className="bg-white rounded-xl p-4 shadow-sm border-0"
             onPress={handleGoogleOAuth}
         >
-            <Ionicons name="logo-google" size={24} color="black" />
-            <Text className="font-nunito text-xl">Continue with Google</Text>
-        </Pressable>
+            <XStack alignItems="center" gap="$2">
+                <Ionicons name="logo-google" size={24} color="black" />
+                <Text className="font-nunito text-xl text-gray-800 font-semibold">Continue with Google</Text>
+            </XStack>
+        </Button>
 
-        <Text className="font-serif text-xs text-center text-white">
+        <Text className="font-nunito text-xs text-center text-white">
             By continuing you agree to MorpheoAI's
             <Text className="text-lavender underline" onPress={openLink}>
                 {' '}

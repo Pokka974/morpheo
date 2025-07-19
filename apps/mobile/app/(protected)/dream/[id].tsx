@@ -107,26 +107,26 @@ const DreamDetail = () => {
                 <View className="flex-1 p-4 gap-2">
                     {/* Title */}
                     <View className="flex-row justify-between items-center gap-2">
-                        <Text className="font-nunito text-2xl font-bold w-[80%]">{dreamDetail?.title}</Text>
+                        <Text className="font-nunito text-2xl font-bold text-gray-800 w-[80%]">{dreamDetail?.title}</Text>
                         <Text className="text-xl">{dreamDetail?.emoji}</Text>
                     </View>
                     {/* Keywords */}
                     <View className="flex-row items-center mt-2">
-                        <Text className="text-lg font-nunito mr-2">Keywords:</Text>
+                        <Text className="font-nunito text-lg font-semibold text-gray-800 mr-2">Keywords:</Text>
                         {dreamDetail?.keywords.map((tag, index) => (
                             <PastelChip key={index} text={tag} size="sm" bgColor={tagColorMapping[tag]} />
                         ))}
                     </View>
                     {/* Dream summary */}
-                    <View className="bg-white p-2 rounded-lg mt-2 shadow-md">
-                        <Text className="font-nunito text-lg text-justify">
+                    <View className="bg-white p-4 rounded-xl mt-2 shadow-sm">
+                        <Text className="font-nunito text-lg text-gray-800 text-justify">
                             {dreamDetail?.summary ? highlightText(dreamDetail.summary, tagColorMapping) : ''}
                         </Text>
                     </View>
                     <View className="border-t-[1px] border-gray-700 my-6"></View>
                     {/* Emotions */}
                     <View className="flex-row items-center">
-                        <Text className="text-lg font-nunito mr-2">Emotions:</Text>
+                        <Text className="font-nunito text-lg font-semibold text-gray-800 mr-2">Emotions:</Text>
                         <FlatList
                             horizontal
                             data={dreamDetail?.emotions}
@@ -157,11 +157,11 @@ const DreamDetail = () => {
                         ))}
                     </View>
                     {/* Advice Card */}
-                    <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-xl">
+                    <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-sm">
                         <View className="self-center mb-2">
                             <BulbIcon />
                         </View>
-                        <Text className="text-text font-nunito text-lg">{dreamDetail?.advice}</Text>
+                        <Text className="font-nunito text-lg text-gray-800">{dreamDetail?.advice}</Text>
                     </View>
                 </View>
             </ScrollView>
