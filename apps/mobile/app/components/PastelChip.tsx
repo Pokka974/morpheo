@@ -50,6 +50,7 @@ const PastelChip: React.FC<PastelChipProps> = ({ text, bgColor, size = 'md' }) =
                     color: '#4B5563',
                     fontSize,
                     fontWeight: '500',
+                    fontFamily: 'Nunito',
                 }}
             >
                 {text}

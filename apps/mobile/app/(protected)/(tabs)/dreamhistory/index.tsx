@@ -77,7 +77,8 @@ const Index = () => {
                     placeholder="Search dreams (e.g., 'happy flight')..."
                     value={searchText}
                     onChangeText={setSearchText}
-                    className="rounded-lg bg-white h-12 border border-gray-300 px-2 m-2"
+                    className="rounded-xl bg-white h-12 border border-gray-300 px-4 m-2 font-nunito shadow-sm"
+                    placeholderTextColor="#9ca3af"
                 />
 
                 {/* FlatList for dream cards */}

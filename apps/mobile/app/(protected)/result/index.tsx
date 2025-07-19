@@ -151,7 +151,7 @@ export default function InterpretationScreen() {
     if (!dreamData) {
         return (
             <View className="flex-1 justify-center items-center">
-                <Text>No dream data available</Text>
+                <Text className="font-nunito text-gray-800">No dream data available</Text>
                 <Button
                     onPress={() => {
                         reset();
@@ -206,7 +206,7 @@ export default function InterpretationScreen() {
                 ref={scrollViewRef}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
-                contentContainerStyle={{ paddingBottom: 100, paddingTop: 30 }}
+                contentContainerStyle={{ paddingBottom: 160, paddingTop: 30 }}
                 className="flex-1 p-5"
             >
                 {/* AI Generated Image */}
@@ -218,11 +218,11 @@ export default function InterpretationScreen() {
                     }}
                 />
                 {/* Interpretation Card */}
-                <View className="bg-white rounded-3xl p-4 mb-6 gap-2 shadow-xl">
+                <View className="bg-white rounded-xl p-4 mb-6 gap-2 shadow-sm">
                     <View className="self-center mb-2">
                         <CrescentMoonIcon />
                     </View>
-                    <Text className="text-text font-nunito text-lg">{dreamData.summary}</Text>
+                    <Text className="font-nunito text-lg text-gray-800">{dreamData.summary}</Text>
                 </View>
                 {/* Emotions Section */}
                 <SectionHeader title="Emotions" emoji={dreamData.emoji} />
@@ -266,11 +266,11 @@ export default function InterpretationScreen() {
                     />
                 ))}
                 {/* Advice Card */}
-                <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-xl">
+                <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-sm">
                     <View className="self-center mb-2">
                         <BulbIcon />
                     </View>
-                    <Text className="text-text font-nunito text-lg">{dreamData.advice}</Text>
+                    <Text className="font-nunito text-lg text-gray-800">{dreamData.advice}</Text>
                 </View>
             </ScrollView>
 
@@ -278,14 +278,15 @@ export default function InterpretationScreen() {
             <Animated.View
                 style={{
                     position: 'absolute',
-                    bottom: 70,
+                    bottom: 30,
+                    left: 20,
                     right: 20,
                     opacity: fadeAnim,
                     transform: [
                         {
                             scale: fadeAnim.interpolate({
                                 inputRange: [0, 1],
-                                outputRange: [0.8, 1],
+                                outputRange: [0.95, 1],
                             }),
                         },
                     ],
@@ -297,20 +298,14 @@ export default function InterpretationScreen() {
                             reset();
                             setVisible(true);
                         }}
+                        className="bg-white rounded-xl p-4 shadow-lg border border-gray-200"
                         style={{
-                            backgroundColor: Colors.primary,
-                            padding: 15,
-                            borderRadius: 50,
                             flexDirection: 'row',
                             alignItems: 'center',
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 5,
-                            elevation: 5,
+                            justifyContent: 'center',
                         }}
                     >
-                        <Text style={{ fontFamily: 'Nunito', marginRight: 8 }}>Go to Dream Journal</Text>
+                        <Text className="font-nunito text-lg font-semibold text-gray-800 mr-2">Go to Dream Journal</Text>
                         <RightArrowIcon />
                     </Pressable>
                 </Link>
@@ -321,13 +316,13 @@ export default function InterpretationScreen() {
                 <View
                     style={{
                         position: 'absolute',
-                        bottom: 20,
+                        bottom: 110,
                         left: 20,
                         right: 20,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        paddingVertical: 10,
-                        paddingHorizontal: 15,
-                        borderRadius: 25,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
                         alignItems: 'center',
                     }}
                 >
@@ -336,7 +331,7 @@ export default function InterpretationScreen() {
                             scrollViewRef.current?.scrollTo({ y: 0, animated: true });
                         }}
                     >
-                        <Text style={{ color: 'white', fontFamily: 'Nunito' }}>Tap here to see the image!</Text>
+                        <Text className="font-nunito text-white text-sm">Tap here to see the image!</Text>
                     </Pressable>
                 </View>
             )}
@@ -354,7 +349,7 @@ export interface SectionHeaderProps {
 export const SectionHeader = ({ title, emoji, icon }: SectionHeaderProps) => (
     <View className="flex-row items-center mb-4 mt-6">
         {emoji ? <Text className="text-4xl mr-2">{emoji}</Text> : icon === 'book' ? <BookIcon /> : <TagIcon />}
-        <Text className="text-xl font-semibold text-text font-nunito">{title}</Text>
+        <Text className="font-nunito text-xl font-semibold text-gray-800">{title}</Text>
     </View>
 );
 
@@ -370,7 +365,7 @@ export const Accordion = ({ title, content, isExpanded, onToggle }: AccordionPro
     return (
         <View className="bg-white rounded-xl p-4 my-2">
             <Pressable className="flex-row justify-between items-center" onPress={onToggle}>
-                <Text className="font-semibold">{title}</Text>
+                <Text className="font-nunito font-semibold text-gray-800">{title}</Text>
                 <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.primary} />
             </Pressable>
             {isExpanded && <Text className="font-nunito mt-2">{content}</Text>}

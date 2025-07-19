@@ -107,9 +107,51 @@ const getDreamById = async (dreamId: string, token: string) => {
     }
 };
 
+const deleteUserData = async (token: string) => {
+    try {
+        const response = await fetch(`${Constants.expoConfig?.extra?.apiUrl}/user/delete-data`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete user data');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error deleting user data:', error);
+        throw error;
+    }
+};
+
+const exportUserData = async (token: string) => {
+    try {
+        const response = await fetch(`${Constants.expoConfig?.extra?.apiUrl}/user/export-data`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to export user data');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error exporting user data:', error);
+        throw error;
+    }
+};
+
 export default {
     postChatGPT,
     updateDreamImagePath,
     getAllDreams,
     getDreamById,
+    deleteUserData,
+    exportUserData,
 };
