@@ -1,0 +1,43 @@
+enum SubscriptionPlan {
+  BASIC
+  PREMIUM
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dream {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String
+  userId             String   // Clerk's user.id
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  advice             String
+  culturalReferences Json
+  dallEPrompt        String
+  emotions           String[]
+  keywords           String[]
+  midjourneyPrompt   String
+  dalleImagePath     String?
+  summary            String
+  emoji              String   @default("❓")
+
+  @@index([userId]) // Index for faster queries by userId
+}
+
+model Subscription {
+  id           String           @id @default(uuid())
+  userId       String           @unique // Clerk's user ID
+  plan         SubscriptionPlan
+  requestCount Int              @default(0)
+  periodStart  DateTime
+  periodEnd    DateTime
+  updatedAt    DateTime         @updatedAt
+}
