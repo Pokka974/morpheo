@@ -2,8 +2,19 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { getAuth } from '@clerk/express';
 import { logError, logInfo } from '../services/logger.service';
+import { z } from 'zod';
 
 const prisma = new PrismaClient();
+
+// Validation schema for user profile
+const userProfileSchema = z.object({
+    gender: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY']).optional(),
+    ageRange: z.enum(['TEEN_13_17', 'YOUNG_ADULT_18_25', 'ADULT_26_35', 'MIDDLE_AGED_36_50', 'MATURE_51_65', 'SENIOR_65_PLUS']).optional(),
+    culturalBackground: z.array(z.string()).optional(),
+    primaryLanguage: z.string().optional(),
+    location: z.string().optional(),
+    interpretationStyle: z.enum(['SCIENTIFIC', 'SPIRITUAL', 'PSYCHOLOGICAL', 'BALANCED', 'CULTURAL_FOCUSED']).optional(),
+});
 
 /**
  * Delete all user data for GDPR compliance
@@ -109,6 +120,91 @@ export const exportUserData = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             error: 'Internal server error while exporting user data',
+        });
+    }
+};
+
+/**
+ * Get user profile
+ */
+export const getUserProfile = async (req: Request, res: Response) => {
+    try {
+        const { userId } = getAuth(req);
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated',
+            });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { clerkUserId: userId },
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: user,
+        });
+    } catch (error) {
+        logError(`Error getting user profile: ${error}`);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error while getting user profile',
+        });
+    }
+};
+
+/**
+ * Create or update user profile
+ */
+export const upsertUserProfile = async (req: Request, res: Response) => {
+    try {
+        const { userId } = getAuth(req);
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated',
+            });
+        }
+
+        // Validate input
+        const validationResult = userProfileSchema.safeParse(req.body);
+        if (!validationResult.success) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid input data',
+                details: validationResult.error.issues,
+            });
+        }
+
+        const profileData = validationResult.data;
+
+        // Upsert user profile
+        const user = await prisma.user.upsert({
+            where: { clerkUserId: userId },
+            update: {
+                ...profileData,
+                updatedAt: new Date(),
+            },
+            create: {
+                clerkUserId: userId,
+                ...profileData,
+            },
+        });
+
+        logInfo(`User profile updated for user: ${userId}`);
+
+        return res.status(200).json({
+            success: true,
+            data: user,
+        });
+    } catch (error) {
+        logError(`Error updating user profile: ${error}`);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error while updating user profile',
         });
     }
 };

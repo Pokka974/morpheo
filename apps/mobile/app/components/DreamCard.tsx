@@ -3,15 +3,13 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, Text, View, ScrollView, Modal } from 'react-native';
 import { DreamData } from '../store/dreamResultStore';
 import PastelChip from './PastelChip';
-import { Image } from 'expo-image';
 import getUniquePastelColors from '../utils/pastelColors';
+import DreamImage from './DreamImage';
 
 interface DreamCardProps {
   dream: DreamData;
   onPress: () => void;
 }
-const blurhash =
-  '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
 
 const DreamCard = ({ dream, onPress }: DreamCardProps) => {
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -55,14 +53,11 @@ const DreamCard = ({ dream, onPress }: DreamCardProps) => {
     <>
       <View className="flex-row h-40 bg-white rounded-xl overflow-hidden shadow-sm my-2 mx-4">
         {/* Image on the left taking 1/3 of the card width */}
-        <Pressable onPress={onPress} className="w-2/5 h-full">
-          <Image
-            placeholderContentFit="scale-down"
-            transition={300}
+        <Pressable onPress={onPress} className="w-2/5 h-full relative">
+          <DreamImage
+            uri={dream.dalleImagePath}
+            base64Data={dream.dalleImageData}
             style={{ width: '100%', height: '100%' }}
-            placeholder={{ blurhash }}
-            source={{ uri: dream.dalleImagePath }}
-            contentFit="cover"
           />
         </Pressable>
         <View className="flex-1 p-2 justify-between gap-3">

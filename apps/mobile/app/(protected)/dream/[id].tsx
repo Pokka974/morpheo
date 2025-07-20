@@ -12,6 +12,7 @@ import useDreamDetailStore from '@/app/store/dreamDetailStore';
 import getUniquePastelColors from '@/app/utils/pastelColors';
 import { Accordion, SectionHeader } from '../result';
 import BulbIcon from '@/app/components/svg-components/Bulb';
+import RecurringDreamsIcon from '@/app/components/svg-components/RecurringDreams';
 
 // Helper to escape regex special chars
 const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
@@ -98,7 +99,11 @@ const DreamDetail = () => {
             {/* To draw behind the status bar, we configure the StatusBar */}
             <StatusBar translucent backgroundColor="transparent" />
             {/* Dream Image */}
-            <DreamImage uri={dreamDetail?.dalleImagePath} style={{ width: '100%', height: '45%' }} />
+            <DreamImage 
+                uri={dreamDetail?.dalleImagePath} 
+                base64Data={dreamDetail?.dalleImageData}
+                style={{ width: '100%', height: '45%' }} 
+            />
             {/* Go back button */}
             <Link className="rounded-full bg-peach/70 absolute top-20 left-6 p-2" href="/dreamhistory">
                 <Ionicons name="arrow-back-outline" size={35} color="#fff" />
@@ -156,6 +161,65 @@ const DreamDetail = () => {
                             />
                         ))}
                     </View>
+                    
+                    {/* Recurring Patterns Section */}
+                    {dreamDetail?.recurringDreamAnalysis?.hasConnections && (
+                        <>
+                            <SectionHeader title="Recurring Patterns" icon="recurring" />
+                            
+                            {/* Connected Dreams */}
+                            {dreamDetail.recurringDreamAnalysis.connectedDreams.length > 0 && (
+                                <View className="mb-4">
+                                    <Text className="font-nunito font-semibold text-gray-700 mb-2">Connected Dreams:</Text>
+                                    {dreamDetail.recurringDreamAnalysis.connectedDreams.map((connectedDream, index) => (
+                                        <Accordion
+                                            key={`${connectedDream.id}-${index}`}
+                                            title={`${connectedDream.title} - ${connectedDream.date}`}
+                                            content={connectedDream.connection}
+                                            isExpanded={expandedAccordion === `connected-${connectedDream.id}`}
+                                            onToggle={() =>
+                                                setExpandedAccordion(
+                                                    expandedAccordion === `connected-${connectedDream.id}` 
+                                                        ? null 
+                                                        : `connected-${connectedDream.id}`
+                                                )
+                                            }
+                                        />
+                                    ))}
+                                </View>
+                            )}
+                            
+                            {/* Recurring Patterns */}
+                            {dreamDetail.recurringDreamAnalysis.patterns.length > 0 && (
+                                <View className="mb-4">
+                                    <Text className="font-nunito font-semibold text-gray-700 mb-2">Patterns:</Text>
+                                    <View className="flex-row flex-wrap gap-2">
+                                        {dreamDetail.recurringDreamAnalysis.patterns.map((pattern, index) => (
+                                            <PastelChip
+                                                key={`pattern-${index}`}
+                                                text={pattern}
+                                                bgColor={getUniquePastelColors(dreamDetail.recurringDreamAnalysis?.patterns.length || 1)[index] || '#e0e0e0'}
+                                                size="md"
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                            
+                            {/* Interpretation */}
+                            {dreamDetail.recurringDreamAnalysis.interpretation && (
+                                <View className="bg-white rounded-xl p-4 mb-6 gap-2 shadow-sm">
+                                    <View className="self-center mb-2">
+                                        <RecurringDreamsIcon />
+                                    </View>
+                                    <Text className="font-nunito text-lg text-gray-800">
+                                        {dreamDetail.recurringDreamAnalysis.interpretation}
+                                    </Text>
+                                </View>
+                            )}
+                        </>
+                    )}
+                    
                     {/* Advice Card */}
                     <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-sm">
                         <View className="self-center mb-2">

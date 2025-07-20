@@ -8,9 +8,6 @@ import PastelChip from '@/app/components/PastelChip';
 import Colors from '@/constants/Colors';
 import DreamImage from '@/app/components/DreamImage';
 import { Button } from 'tamagui';
-import requestStoragePermissions, { openSettings } from '@/app/utils/checkStoragePermission';
-import * as FileSystem from 'expo-file-system';
-import dreamApi from '@/api/dreamApi';
 import { useAuth } from '@clerk/clerk-expo';
 import dallEApi from '@/api/dallEApi';
 import CrescentMoonIcon from '@/app/components/svg-components/CrescentMoon';
@@ -18,73 +15,26 @@ import BookIcon from '@/app/components/svg-components/Book';
 import TagIcon from '@/app/components/svg-components/Tag';
 import BulbIcon from '@/app/components/svg-components/Bulb';
 import RightArrowIcon from '@/app/components/svg-components/RightArrow';
+import RecurringDreamsIcon from '@/app/components/svg-components/RecurringDreams';
 import useDreamListStore from '@/app/store/dreamListStore';
 import useDreamResultStore from '@/app/store/dreamResultStore';
 import getUniquePastelColors from '@/app/utils/pastelColors';
 
 const IMAGE_HEIGHT = 256; // same as DreamImage height defined below
 
-const generateAndSaveDalleImage = async (dreamId: string, dallEPrompt: string, token: string) => {
+const generateDalleImage = async (dreamId: string, dallEPrompt: string, token: string) => {
     try {
-        // Request permissions
-        const hasPermission = await requestStoragePermissions();
-        if (!hasPermission) {
-            Alert.alert(
-                'Storage Access Required',
-                'To save your dream images, we need access to your storage. Please enable permissions in settings.',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Open Settings', onPress: openSettings },
-                ]
-            );
-            throw new Error('STORAGE_PERMISSION_DENIED');
-        }
-
-        // Create directory structure
-        const directory = `${FileSystem.documentDirectory}dream-images/`;
-        await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
-
-        // Generate unique filename
-        const filename = `dream-${dreamId}-${Date.now()}.png`;
-        const localUri = `${directory}${filename}`;
-
-        // Get DALL-E image URL first
+        // Generate DALL-E image (backend handles download and base64 storage)
         const dalleResponse = await dallEApi.generateDallE(dallEPrompt, dreamId, token);
 
         // Validate response
-        if (!dalleResponse?.imageUrl) {
+        if (!dalleResponse?.imageUrl && !dalleResponse?.imageBase64) {
             throw new Error('INVALID_DALLE_RESPONSE');
         }
 
-        // Create temporary file URI for download
-        const downloadUri = `${localUri}.tmp`;
-
-        // Configure download
-        const downloadResumable = FileSystem.createDownloadResumable(
-            dalleResponse.imageUrl, // Remote URL
-            downloadUri // Temporary local path
-        );
-
-        // Execute download
-        const result = await downloadResumable.downloadAsync();
-
-        if (!result || result.status !== 200) {
-            await FileSystem.deleteAsync(downloadUri); // Clean up
-            throw new Error('DOWNLOAD_FAILED');
-        }
-
-        // Move from temp location to final location
-        await FileSystem.moveAsync({
-            from: downloadUri,
-            to: localUri,
-        });
-
-        // Update database
-        await dreamApi.updateDreamImagePath(dreamId, localUri, token);
-
-        return localUri;
+        return dalleResponse;
     } catch (error) {
-        console.error('Image Save Error:', error);
+        console.error('Image Generation Error:', error);
         throw error;
     }
 };
@@ -101,6 +51,8 @@ export default function InterpretationScreen() {
     const [showScrollToTop, setShowScrollToTop] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
     const addDream = useDreamListStore(state => state.addDream);
+    const lastProcessedDreamId = useRef<string | null>(null);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
     // Create mapping for emotions with deterministic pastel colors.
     const emotionMapping: Record<string, string> = useMemo(() => {
@@ -127,26 +79,60 @@ export default function InterpretationScreen() {
     }, [dreamData?.keywords]);
 
     useEffect(() => {
-        // Generate & save DALL-E image. Use a flag to ensure this runs only once.
-        const hasRun = { current: false };
+        // Only generate image if we have dream data
+        if (!dreamData) {
+            return;
+        }
+
+        // Check if we already processed this specific dream
+        if (lastProcessedDreamId.current === dreamData.id) {
+            return;
+        }
+
+        // Check if image already exists
+        if (dreamData.dalleImageData || dreamData.dalleImagePath) {
+            lastProcessedDreamId.current = dreamData.id; // Mark as processed even if image exists
+            return;
+        }
+
+        // Check if we're already generating an image for any dream
+        if (isGeneratingImage) {
+            return;
+        }
+
+        // Mark this dream as processed and start generation
+        lastProcessedDreamId.current = dreamData.id;
+        setIsGeneratingImage(true);
+
         (async () => {
-            if (hasRun.current) return;
-            hasRun.current = true;
-            if (!dreamData) {
-                return;
-            }
-            const token = await getToken();
-            const imagePath = await generateAndSaveDalleImage(dreamData.id, dreamData.dallEPrompt, token!);
-            if (imagePath) {
-                // Optionally check if the image has already been set
-                if (dreamData.dalleImagePath !== imagePath) {
-                    dreamData.dalleImagePath = imagePath;
-                    useDreamResultStore.getState().setDreamData(dreamData);
-                    addDream(dreamData); // Add the dream to the list
+            try {
+                const token = await getToken();
+                if (!token) {
+                    setIsGeneratingImage(false);
+                    return;
                 }
+
+                const dalleResponse = await generateDalleImage(dreamData.id, dreamData.dallEPrompt, token);
+                if (dalleResponse) {
+                    // Create updated dream data without mutating original
+                    const updatedDreamData = {
+                        ...dreamData,
+                        dalleImagePath: dalleResponse.imageUrl || dreamData.dalleImagePath,
+                        dalleImageData: dalleResponse.imageBase64 || dreamData.dalleImageData,
+                    };
+                    
+                    useDreamResultStore.getState().setDreamData(updatedDreamData);
+                    addDream(updatedDreamData);
+                }
+            } catch (error) {
+                console.error('Failed to generate image:', error);
+                // Reset the processed dream ID on error to allow retry
+                lastProcessedDreamId.current = null;
+            } finally {
+                setIsGeneratingImage(false);
             }
         })();
-    }, []);
+    }, [dreamData?.id]); // Only depend on dream ID to trigger when new dream arrives
 
     if (!dreamData) {
         return (
@@ -210,13 +196,30 @@ export default function InterpretationScreen() {
                 className="flex-1 p-5"
             >
                 {/* AI Generated Image */}
-                <DreamImage
-                    uri={dreamData.dalleImagePath}
-                    style={{ width: '100%', height: IMAGE_HEIGHT, borderRadius: 16, marginBottom: 24 }}
-                    onLoad={() => {
-                        setImageLoaded(true);
-                    }}
-                />
+                {isGeneratingImage ? (
+                    <View style={{ width: '100%', height: IMAGE_HEIGHT, borderRadius: 16, marginBottom: 24 }} 
+                          className="bg-gray-200 items-center justify-center">
+                        <Text className="font-nunito text-gray-600 text-center px-4">
+                            🎨 Generating your dream image...
+                        </Text>
+                    </View>
+                ) : (dreamData.dalleImageData || dreamData.dalleImagePath) ? (
+                    <DreamImage
+                        uri={dreamData.dalleImagePath}
+                        base64Data={dreamData.dalleImageData}
+                        style={{ width: '100%', height: IMAGE_HEIGHT, borderRadius: 16, marginBottom: 24 }}
+                        onLoad={() => {
+                            setImageLoaded(true);
+                        }}
+                    />
+                ) : (
+                    <View style={{ width: '100%', height: IMAGE_HEIGHT, borderRadius: 16, marginBottom: 24 }} 
+                          className="bg-gray-100 items-center justify-center border-2 border-dashed border-gray-300">
+                        <Text className="font-nunito text-gray-500 text-center px-4">
+                            ✨ Dream image will appear here
+                        </Text>
+                    </View>
+                )}
                 {/* Interpretation Card */}
                 <View className="bg-white rounded-xl p-4 mb-6 gap-2 shadow-sm">
                     <View className="self-center mb-2">
@@ -265,6 +268,68 @@ export default function InterpretationScreen() {
                         onToggle={() => setExpandedAccordion(expandedAccordion === ref.culture ? null : ref.culture)}
                     />
                 ))}
+                
+                {/* Recurring Patterns Section */}
+                {dreamData.recurringDreamAnalysis?.hasConnections && (
+                    <>
+                        <SectionHeader title="Recurring Patterns" icon="recurring" />
+                        
+                        {/* Connected Dreams */}
+                        {dreamData.recurringDreamAnalysis.connectedDreams.length > 0 && (
+                            <View className="mb-4">
+                                <Text className="font-nunito font-semibold text-gray-700 mb-2">Connected Dreams:</Text>
+                                {dreamData.recurringDreamAnalysis.connectedDreams.map((connectedDream, index) => (
+                                    <Accordion
+                                        key={`${connectedDream.id}-${index}`}
+                                        title={`${connectedDream.title} - ${connectedDream.date}`}
+                                        content={connectedDream.connection}
+                                        isExpanded={expandedAccordion === `connected-${connectedDream.id}`}
+                                        onToggle={() => 
+                                            setExpandedAccordion(
+                                                expandedAccordion === `connected-${connectedDream.id}` 
+                                                    ? null 
+                                                    : `connected-${connectedDream.id}`
+                                            )
+                                        }
+                                    />
+                                ))}
+                            </View>
+                        )}
+                        
+                        {/* Recurring Patterns */}
+                        {dreamData.recurringDreamAnalysis.patterns.length > 0 && (
+                            <View className="mb-4">
+                                <Text className="font-nunito font-semibold text-gray-700 mb-2">Patterns:</Text>
+                                <FlatList
+                                    horizontal
+                                    data={dreamData.recurringDreamAnalysis.patterns}
+                                    renderItem={({ item, index }) => (
+                                        <PastelChip
+                                            key={`pattern-${index}`}
+                                            text={item}
+                                            bgColor={getUniquePastelColors(dreamData.recurringDreamAnalysis?.patterns.length || 1)[index] || '#e0e0e0'}
+                                            size="md"
+                                        />
+                                    )}
+                                    keyExtractor={(item, index) => `pattern-${index}`}
+                                />
+                            </View>
+                        )}
+                        
+                        {/* Interpretation */}
+                        {dreamData.recurringDreamAnalysis.interpretation && (
+                            <View className="bg-white rounded-xl p-4 mb-6 gap-2 shadow-sm">
+                                <View className="self-center mb-2">
+                                    <RecurringDreamsIcon />
+                                </View>
+                                <Text className="font-nunito text-lg text-gray-800">
+                                    {dreamData.recurringDreamAnalysis.interpretation}
+                                </Text>
+                            </View>
+                        )}
+                    </>
+                )}
+                
                 {/* Advice Card */}
                 <View className="bg-white rounded-xl p-4 mt-6 gap-2 shadow-sm">
                     <View className="self-center mb-2">
@@ -348,7 +413,15 @@ export interface SectionHeaderProps {
 
 export const SectionHeader = ({ title, emoji, icon }: SectionHeaderProps) => (
     <View className="flex-row items-center mb-4 mt-6">
-        {emoji ? <Text className="text-4xl mr-2">{emoji}</Text> : icon === 'book' ? <BookIcon /> : <TagIcon />}
+        {emoji ? (
+            <Text className="text-4xl mr-2">{emoji}</Text>
+        ) : icon === 'book' ? (
+            <BookIcon />
+        ) : icon === 'recurring' ? (
+            <RecurringDreamsIcon />
+        ) : (
+            <TagIcon />
+        )}
         <Text className="font-nunito text-xl font-semibold text-gray-800">{title}</Text>
     </View>
 );

@@ -22,9 +22,18 @@ const generateDallEImage = async (req: Request, res: Response) => {
             openai,
         );
 
-        if (dallERes) {
-            logInfo(`New dream image generated: ${JSON.stringify(dallERes)}`);
+        if (dallERes && !(dallERes instanceof Error)) {
+            logInfo(
+                `New dream image generated: ${JSON.stringify(
+                    dallERes.imageUrl,
+                )}`,
+            );
             res.status(StatusCodes.OK).json(dallERes);
+        } else if (dallERes instanceof Error) {
+            logError(dallERes.message);
+            res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(
+                dallERes.message,
+            );
         }
     } catch (error) {
         logError(error as string);

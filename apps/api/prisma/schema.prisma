@@ -3,6 +3,30 @@ enum SubscriptionPlan {
   PREMIUM
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum AgeRange {
+  TEEN_13_17
+  YOUNG_ADULT_18_25
+  ADULT_26_35
+  MIDDLE_AGED_36_50
+  MATURE_51_65
+  SENIOR_65_PLUS
+}
+
+enum InterpretationStyle {
+  SCIENTIFIC
+  SPIRITUAL
+  PSYCHOLOGICAL
+  BALANCED
+  CULTURAL_FOCUSED
+}
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,11 +36,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                    String               @id @default(cuid())
+  clerkUserId          String               @unique
+  email                String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  
+  // Demographics for dream personalization
+  gender               Gender?
+  ageRange             AgeRange?
+  culturalBackground   String[]             // Array of cultural identities
+  primaryLanguage      String?              @default("en")
+  location             String?              // City, country for regional context
+  
+  // Dream interpretation preferences
+  interpretationStyle  InterpretationStyle? @default(BALANCED)
+  
+  // Relationships
+  dreams               Dream[]
+  subscription         Subscription?
+  
+  @@index([clerkUserId])
+}
+
 model Dream {
   id                 String   @id @default(cuid())
   title              String
   description        String
   userId             String   // Clerk's user.id
+  user               User?    @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   advice             String
@@ -26,6 +75,7 @@ model Dream {
   keywords           String[]
   midjourneyPrompt   String
   dalleImagePath     String?
+  dalleImageData     String?   // Base64 encoded image data
   summary            String
   emoji              String   @default("❓")
 
@@ -35,6 +85,7 @@ model Dream {
 model Subscription {
   id           String           @id @default(uuid())
   userId       String           @unique // Clerk's user ID
+  user         User?            @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
   plan         SubscriptionPlan
   requestCount Int              @default(0)
   periodStart  DateTime
