@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { ScrollView, View, Text, FlatList, Pressable, Alert, Animated, Modal } from 'react-native';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { ScrollView, View, Text, Pressable, Alert, Animated, Modal } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import GeneralLinearBackground from '@/app/components/GeneralLinearBackground';
@@ -8,7 +9,7 @@ import PastelChip from '@/app/components/PastelChip';
 import Colors from '@/constants/Colors';
 import DreamImage from '@/app/components/DreamImage';
 import { Button } from 'tamagui';
-import { useAuth } from '@clerk/clerk-expo';
+import { useStableToken } from '@/app/hooks/useStableToken';
 import dallEApi from '@/api/dallEApi';
 import CrescentMoonIcon from '@/app/components/svg-components/CrescentMoon';
 import BookIcon from '@/app/components/svg-components/Book';
@@ -40,7 +41,7 @@ const generateDalleImage = async (dreamId: string, dallEPrompt: string, token: s
 };
 
 export default function InterpretationScreen() {
-    const { getToken } = useAuth();
+    const { getToken } = useStableToken();
     const router = useRouter();
     const { dreamData, reset } = useDreamResultStore();
     const { setVisible } = useTabBarStore();
@@ -78,14 +79,15 @@ export default function InterpretationScreen() {
         return mapping;
     }, [dreamData?.keywords]);
 
-    useEffect(() => {
-        // Only generate image if we have dream data
+    // Memoized image generation function
+    const generateImageForDream = useCallback(async () => {
         if (!dreamData) {
             return;
         }
 
         // Check if we already processed this specific dream
         if (lastProcessedDreamId.current === dreamData.id) {
+            console.log(`Skipping duplicate DALL-E generation for dream ID: ${dreamData.id}`);
             return;
         }
 
@@ -97,6 +99,7 @@ export default function InterpretationScreen() {
 
         // Check if we're already generating an image for any dream
         if (isGeneratingImage) {
+            console.log('Already generating image, skipping...');
             return;
         }
 
@@ -104,35 +107,38 @@ export default function InterpretationScreen() {
         lastProcessedDreamId.current = dreamData.id;
         setIsGeneratingImage(true);
 
-        (async () => {
-            try {
-                const token = await getToken();
-                if (!token) {
-                    setIsGeneratingImage(false);
-                    return;
-                }
-
-                const dalleResponse = await generateDalleImage(dreamData.id, dreamData.dallEPrompt, token);
-                if (dalleResponse) {
-                    // Create updated dream data without mutating original
-                    const updatedDreamData = {
-                        ...dreamData,
-                        dalleImagePath: dalleResponse.imageUrl || dreamData.dalleImagePath,
-                        dalleImageData: dalleResponse.imageBase64 || dreamData.dalleImageData,
-                    };
-                    
-                    useDreamResultStore.getState().setDreamData(updatedDreamData);
-                    addDream(updatedDreamData);
-                }
-            } catch (error) {
-                console.error('Failed to generate image:', error);
-                // Reset the processed dream ID on error to allow retry
-                lastProcessedDreamId.current = null;
-            } finally {
+        try {
+            const token = await getToken();
+            if (!token) {
                 setIsGeneratingImage(false);
+                return;
             }
-        })();
-    }, [dreamData?.id]); // Only depend on dream ID to trigger when new dream arrives
+
+            console.log(`API Call: Generating DALL-E image for dream ID: ${dreamData.id}`);
+            const dalleResponse = await generateDalleImage(dreamData.id, dreamData.dallEPrompt, token);
+            if (dalleResponse) {
+                // Create updated dream data without mutating original
+                const updatedDreamData = {
+                    ...dreamData,
+                    dalleImagePath: dalleResponse.imageUrl || dreamData.dalleImagePath,
+                    dalleImageData: dalleResponse.imageBase64 || dreamData.dalleImageData,
+                };
+                
+                useDreamResultStore.getState().setDreamData(updatedDreamData);
+                addDream(updatedDreamData);
+            }
+        } catch (error) {
+            console.error('Failed to generate image:', error);
+            // Reset the processed dream ID on error to allow retry
+            lastProcessedDreamId.current = null;
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    }, [dreamData?.id, dreamData?.dallEPrompt, getToken]);
+
+    useEffect(() => {
+        generateImageForDream();
+    }, [generateImageForDream]);
 
     if (!dreamData) {
         return (
@@ -229,7 +235,7 @@ export default function InterpretationScreen() {
                 </View>
                 {/* Emotions Section */}
                 <SectionHeader title="Emotions" emoji={dreamData.emoji} />
-                <FlatList
+                <FlashList
                     horizontal
                     data={dreamData.emotions}
                     renderItem={({ item, index }) => (
@@ -241,10 +247,11 @@ export default function InterpretationScreen() {
                         />
                     )}
                     keyExtractor={item => item}
+                    estimatedItemSize={80}
                 />
                 {/* Keywords Section */}
                 <SectionHeader title="Keywords" icon="pricetag" />
-                <FlatList
+                <FlashList
                     horizontal
                     data={dreamData.keywords}
                     renderItem={({ item, index }) => (
@@ -256,6 +263,7 @@ export default function InterpretationScreen() {
                         />
                     )}
                     keyExtractor={item => item}
+                    estimatedItemSize={80}
                 />
                 {/* Cultural References */}
                 <SectionHeader title="Cultural References" icon="book" />
@@ -300,7 +308,7 @@ export default function InterpretationScreen() {
                         {dreamData.recurringDreamAnalysis.patterns.length > 0 && (
                             <View className="mb-4">
                                 <Text className="font-nunito font-semibold text-gray-700 mb-2">Patterns:</Text>
-                                <FlatList
+                                <FlashList
                                     horizontal
                                     data={dreamData.recurringDreamAnalysis.patterns}
                                     renderItem={({ item, index }) => (
@@ -312,6 +320,7 @@ export default function InterpretationScreen() {
                                         />
                                     )}
                                     keyExtractor={(item, index) => `pattern-${index}`}
+                                    estimatedItemSize={80}
                                 />
                             </View>
                         )}

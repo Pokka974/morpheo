@@ -1,8 +1,9 @@
 // index.tsx (Dream Detail Page)
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StatusBar, FlatList } from 'react-native';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { View, Text, StatusBar } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Link, usePathname } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
+import { useStableToken } from '@/app/hooks/useStableToken';
 import GeneralLinearBackground from '@/app/components/GeneralLinearBackground';
 import DreamImage from '@/app/components/DreamImage';
 import { ScrollView } from 'tamagui';
@@ -50,27 +51,33 @@ const highlightText = (text: string, tagColorMapping: Record<string, string>) =>
 };
 
 const DreamDetail = () => {
-    const { getToken } = useAuth();
+    const { getToken } = useStableToken();
     const pathname = usePathname();
     const { dreamDetail, fetchDreamDetail } = useDreamDetailStore();
     const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = await getToken();
-                if (token) {
-                    const dreamIdSplited = pathname.split('/');
-                    const dreamId = dreamIdSplited[dreamIdSplited.length - 1];
-                    await fetchDreamDetail(dreamId, token);
-                }
-            } catch (error) {
-                console.error('Error fetching dream detail:', error);
-            }
-        };
+    // Extract dreamId from pathname
+    const dreamId = useMemo(() => {
+        const dreamIdSplited = pathname.split('/');
+        return dreamIdSplited[dreamIdSplited.length - 1];
+    }, [pathname]);
 
+    // Memoized fetch function to prevent recreation
+    const fetchData = useCallback(async () => {
+        try {
+            const token = await getToken();
+            if (token && dreamId) {
+                console.log(`Fetching dream detail for ID: ${dreamId}`);
+                await fetchDreamDetail(dreamId, token);
+            }
+        } catch (error) {
+            console.error('Error fetching dream detail:', error);
+        }
+    }, [getToken, dreamId, fetchDreamDetail]);
+
+    useEffect(() => {
         fetchData();
-    }, [fetchDreamDetail]);
+    }, [fetchData]);
 
     // Convert cultural references object to array
     const culturalRefs = Object.entries(dreamDetail?.culturalReferences || {}).map(([culture, meaning]) => ({
@@ -132,7 +139,7 @@ const DreamDetail = () => {
                     {/* Emotions */}
                     <View className="flex-row items-center">
                         <Text className="font-nunito text-lg font-semibold text-gray-800 mr-2">Emotions:</Text>
-                        <FlatList
+                        <FlashList
                             horizontal
                             data={dreamDetail?.emotions}
                             renderItem={({ item, index }) => (
@@ -144,6 +151,7 @@ const DreamDetail = () => {
                                 />
                             )}
                             keyExtractor={item => item}
+                            estimatedItemSize={80}
                         />
                     </View>
                     {/* Cultural References */}

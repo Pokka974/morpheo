@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
 
 const generateDallE = async (dreamDescription: string, dreamId: string, token: string) => {
+    const url = `${Constants.expoConfig?.extra?.apiUrl}/dalle`;
+    
     try {
-        const response = await fetch(`${Constants.expoConfig?.extra?.apiUrl}/dalle`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -18,7 +20,7 @@ const generateDallE = async (dreamDescription: string, dreamId: string, token: s
         const responseData = await response.json();
         return responseData;
     } catch (error) {
-        console.error('Fetch Error:', error);
+        console.error('DALL-E Fetch Error:', error);
         throw error;
     }
 };

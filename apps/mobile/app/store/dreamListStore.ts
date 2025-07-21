@@ -35,7 +35,13 @@ const useDreamListStore = create<DreamListStoreState>((set, get) => ({
     },
 
     fetchDreams: async (token: string, forceRefresh: boolean = false) => {
-        const { dreamList, shouldRefetch } = get();
+        const { dreamList, shouldRefetch, isLoading } = get();
+        
+        // Prevent duplicate calls if already loading
+        if (isLoading) {
+            console.log('Already fetching dreams, skipping duplicate call');
+            return;
+        }
         
         // Return cached data if available and not expired, unless force refresh
         if (!forceRefresh && dreamList.length > 0 && !shouldRefetch()) {
@@ -46,7 +52,7 @@ const useDreamListStore = create<DreamListStoreState>((set, get) => ({
         set({ isLoading: true, error: null });
         
         try {
-            console.log('Fetching dreams from API...');
+            console.log('API Call: Fetching all dreams from API...');
             const response = await dreamApi.getAllDreams(token);
 
             set({ 
@@ -65,10 +71,18 @@ const useDreamListStore = create<DreamListStoreState>((set, get) => ({
     },
 
     refreshDreams: async (token: string) => {
+        const { isRefreshing } = get();
+        
+        // Prevent duplicate refresh calls
+        if (isRefreshing) {
+            console.log('Already refreshing dreams, skipping duplicate call');
+            return;
+        }
+        
         set({ isRefreshing: true, error: null });
         
         try {
-            console.log('Refreshing dreams from API...');
+            console.log('API Call: Refreshing dreams from API...');
             const response = await dreamApi.getAllDreams(token);
 
             set({ 

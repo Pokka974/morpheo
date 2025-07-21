@@ -73,23 +73,23 @@ const updateDreamImagePath = async (
 };
 
 const getAllDreams = async (token: string) => {
+  const url = `${Constants.expoConfig?.extra?.apiUrl}/dreams/all`;
+  
   try {
-    const response = await fetch(
-      `${Constants.expoConfig?.extra?.apiUrl}/dreams/all`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch dreams');
     }
+    
     const data = await response.json();
-
     return data;
   } catch (error) {
     console.error('Error fetching dreams:', error);
@@ -98,21 +98,22 @@ const getAllDreams = async (token: string) => {
 };
 
 const getDreamById = async (dreamId: string, token: string) => {
+  const url = `${Constants.expoConfig?.extra?.apiUrl}/dreams/${dreamId}`;
+  
   try {
-    const response = await fetch(
-      `${Constants.expoConfig?.extra?.apiUrl}/dreams/${dreamId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch dream');
     }
+    
     const data = await response.json();
     return data;
   } catch (error) {
