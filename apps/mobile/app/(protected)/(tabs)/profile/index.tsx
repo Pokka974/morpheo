@@ -18,6 +18,7 @@ import { Button, YStack, XStack } from 'tamagui';
 import Colors from '@/constants/Colors';
 import dreamApi from '@/api/dreamApi';
 import { useAuth } from '@clerk/clerk-expo';
+import UserProfileComponent from '@/app/components/UserProfile';
 
 interface SettingsSection {
   title: string;
@@ -53,6 +54,7 @@ const index = () => {
   const [showDataModal, setShowDataModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false);
 
   useEffect(() => {
     setDisplayName(user?.firstName || '');
@@ -154,6 +156,13 @@ const index = () => {
           icon: 'person-outline',
           type: 'action',
           onPress: () => setIsEditingProfile(true),
+        },
+        {
+          title: 'Dream Personalization',
+          description: 'Set your demographics for personalized dream images',
+          icon: 'color-palette-outline',
+          type: 'action',
+          onPress: () => setShowUserProfileModal(true),
         },
         {
           title: 'Change Password',
@@ -533,6 +542,30 @@ const index = () => {
               </Button>
             </YStack>
           </View>
+        </View>
+      </Modal>
+
+      {/* User Profile/Dream Personalization Modal */}
+      <Modal
+        visible={showUserProfileModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View className="flex-1 bg-white">
+          <View className="p-4 border-b border-gray-200">
+            <XStack justifyContent="space-between" alignItems="center">
+              <Text className="font-nunito text-lg font-bold">
+                Dream Personalization
+              </Text>
+              <Button
+                variant="outlined"
+                onPress={() => setShowUserProfileModal(false)}
+              >
+                Close
+              </Button>
+            </XStack>
+          </View>
+          <UserProfileComponent onSaved={() => setShowUserProfileModal(false)} />
         </View>
       </Modal>
     </GeneralLinearBackground>

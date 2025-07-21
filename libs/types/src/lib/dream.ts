@@ -15,9 +15,11 @@ export interface Dream {
   emotions: string[];
   keywords: string[];
   midjourneyPrompt: string; // Backend naming (camelCase)
-  dalleImagePath?: string; // Optional field
+  dalleImagePath?: string; // Optional field - temporary URL from OpenAI
+  dalleImageData?: string; // Optional field - permanent base64 image data
   summary: string;
   emoji: string;
+  recurringDreamAnalysis?: RecurringDreamAnalysis; // Optional field for recurring patterns
 }
 
 /**
@@ -26,6 +28,21 @@ export interface Dream {
 export interface DreamAPI extends Omit<Dream, 'createdAt' | 'updatedAt'> {
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Recurring dream analysis structure
+ */
+export interface RecurringDreamAnalysis {
+  hasConnections: boolean;
+  connectedDreams: Array<{
+    id: string;
+    title: string;
+    date: string;
+    connection: string;
+  }>;
+  patterns: string[];
+  interpretation: string;
 }
 
 /**
@@ -41,6 +58,7 @@ export interface DreamAnalysisResponse {
   emoji: string;
   'dall-e-prompt': string; // AI returns kebab-case
   'midjourney-prompt': string; // AI returns kebab-case
+  recurring_dream_analysis?: RecurringDreamAnalysis; // Optional field for recurring patterns
 }
 
 /**
@@ -64,6 +82,7 @@ export interface UpdateDreamRequest {
   keywords?: string[];
   midjourneyPrompt?: string;
   dalleImagePath?: string;
+  dalleImageData?: string;
   summary?: string;
   emoji?: string;
 }

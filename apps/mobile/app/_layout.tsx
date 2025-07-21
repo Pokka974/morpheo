@@ -33,6 +33,7 @@ export default function RootLayout() {
         SpaceMono_700Bold,
     });
 
+
     if (!fontsLoaded && !fontError) {
         return <Loading />;
     }
