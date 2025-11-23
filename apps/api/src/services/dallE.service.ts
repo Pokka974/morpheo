@@ -1,9 +1,12 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import { OpenAI } from 'openai';
 import { logError, logInfo } from './logger.service';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 const prisma = new PrismaClient();
 dotenv.config();
+
+const GPT_IMAGE_MODEL = 'dall-e-3';
 
 // Safety filter for DALL-E prompts - converts unsafe content to symbolic alternatives
 const sanitizeDallEPrompt = (prompt: string): string => {
@@ -99,26 +102,6 @@ const sanitizeDallEPrompt = (prompt: string): string => {
     return sanitizedPrompt;
 };
 
-const downloadImageAsBase64 = async (imageUrl: string): Promise<string> => {
-    try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to download image: ${response.statusText}`);
-        }
-
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64 = buffer.toString('base64');
-        const mimeType = response.headers.get('content-type') || 'image/png';
-
-        // Return data URI format
-        return `data:${mimeType};base64,${base64}`;
-    } catch (error) {
-        logError(`Error downloading image: ${error}`);
-        throw error;
-    }
-};
-
 const generateDallEImage = async (
     dreamDescription: string,
     dreamId: string,
@@ -140,46 +123,49 @@ const generateDallEImage = async (
         const safePrompt = sanitizeDallEPrompt(originalPrompt);
 
         const response = await openai.images.generate({
-            model: 'dall-e-3',
+            model: GPT_IMAGE_MODEL,
             prompt: safePrompt,
-            style: 'natural',
             user: dream.userId,
             n: 1,
             quality: 'hd',
+            style: 'vivid',
             size: '1024x1024',
+            response_format: 'b64_json',
         });
 
-        logInfo(`DALL-E Response: ${JSON.stringify(response.data)}`);
+        logInfo(
+            `DALL-E Response: Usage ${response.usage}, Created: ${response.created}`,
+        );
 
-        const imageUrl = response.data?.[0]?.url;
-
-        if (!imageUrl) {
-            logError('No image URL');
-            return new Error('No image URL');
+        if (!response.data || !response.data[0] || !response.data[0].b64_json) {
+            logError('No image data received from DALL-E');
+            throw new Error('No image data received from DALL-E');
         }
 
-        // Download the image and convert to base64
-        logInfo('Downloading image for permanent storage...');
-        const imageBase64 = await downloadImageAsBase64(imageUrl);
-        logInfo(`Image converted to base64 successfully)`);
+        const imageBase64 = `data:image/png;base64,${response.data[0].b64_json}`;
+        const revisedPrompt = response.data[0].revised_prompt || safePrompt;
+
+        logInfo(
+            `Image generated successfully with revised prompt: "${revisedPrompt}"`,
+        );
 
         const updatedDream = await prisma.$transaction([
             prisma.dream.update({
                 where: { id: dreamId },
                 data: {
-                    dalleImagePath: imageUrl, // Keep original URL as backup
+                    dalleImagePath: revisedPrompt, // Store the revised prompt used
                     dalleImageData: imageBase64, // Store base64 for permanent access
                 },
             }),
         ]);
 
         return {
-            ...updatedDream,
-            imageUrl,
+            ...updatedDream[0],
             imageBase64,
+            revisedPrompt,
         };
     } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error instanceof PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
                 throw new Error(`Dream ${dreamId} not found in database`);
             }

@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import OpenAI from 'openai';
 import { logError } from '../services/logger.service';
 import { getAuth } from '@clerk/express';
-import { analyzeDream } from '../services/chatgpt.service';
+import { analyzeDream, isPromptSafe } from '../services/chatgpt.service';
 import { checkRateLimit } from '../utils/rateLimiter';
 
 const openai: OpenAI = new OpenAI({
@@ -60,6 +60,42 @@ const createChatGptCompletion = async (req: Request, res: Response) => {
     }
 };
 
+const checkIfPromptIsSafe = async (req: Request, res: Response) => {
+    try {
+        if (!openai) {
+            logError('Invalid OpenAI Token');
+            return res
+                .status(StatusCodes.UNAUTHORIZED)
+                .json({ error: 'Invalid OpenAI Token' });
+        }
+
+        const { prompt } = req.body;
+
+        if (!prompt) {
+            logError('Prompt is missing');
+            return res
+                .status(StatusCodes.BAD_REQUEST)
+                .json({ error: 'Prompt is missing' });
+        }
+
+        try {
+            const result = await isPromptSafe(prompt, openai);
+            return res.status(StatusCodes.OK).json({ isSafe: result });
+        } catch (serviceError: any) {
+            logError(`Safety check service error: ${serviceError.message}`);
+            // If safety check fails, return safe=true to allow the request to proceed
+            // This prevents blocking users when the moderation API is unavailable
+            return res.status(StatusCodes.OK).json({ isSafe: true });
+        }
+    } catch (error: any) {
+        logError(`Unexpected error in checkIfPromptIsSafe: ${error.message}`);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            error: 'Internal server error',
+        });
+    }
+};
+
 export default {
     createChatGptCompletion,
+    checkIfPromptIsSafe,
 };
