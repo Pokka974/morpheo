@@ -1,18 +1,19 @@
 import React from 'react';
-import { Redirect, Slot, Stack } from 'expo-router';
+import { Redirect, Slot } from 'expo-router';
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';
+import Loading from '../loading';
 
-const ProtectedLoayout = () => {
-    return (
-        <>
-            <SignedIn>
-                <Slot />
-            </SignedIn>
-            <SignedOut>
-                <Redirect href="/auth" />
-            </SignedOut>
-        </>
-    );
+const ProtectedLayout = () => {
+  return (
+    <>
+      <SignedIn>
+        <Slot />
+      </SignedIn>
+      <SignedOut>
+        <Redirect href="/auth" />
+      </SignedOut>
+    </>
+  );
 };
 
-export default ProtectedLoayout;
+export default ProtectedLayout;

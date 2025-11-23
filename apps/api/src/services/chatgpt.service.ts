@@ -10,12 +10,23 @@ import {
 const prisma = new PrismaClient();
 const GTP_MODEL = 'gpt-5-mini';
 
+// Cache age mapping to avoid recreating on every call
+const AGE_MAPPING: { [key: string]: string } = {
+    TEEN_13_17: 'teenage (around 15-16 years old)',
+    YOUNG_ADULT_18_25: 'young adult (early twenties, around 22-23 years old)',
+    ADULT_26_35:
+        'young adult (late twenties to early thirties, around 28-30 years old)',
+    MIDDLE_AGED_36_50:
+        'middle-aged adult (late thirties to early forties, around 38-42 years old)',
+    MATURE_51_65: 'mature adult (early fifties, around 52-55 years old)',
+    SENIOR_65_PLUS: 'senior (around 65-70 years old)',
+};
+
 // Zod schema for recurring dream analysis
 const RecurringDreamAnalysisSchema = z.object({
     hasConnections: z.boolean(),
     connectedDreams: z.array(
         z.object({
-            id: z.string(),
             title: z.string(),
             date: z.string(),
             connection: z.string(),
@@ -31,7 +42,7 @@ const DreamAnalysisSchema = z.object({
     summary: z.string(),
     emotions: z.array(z.string()).length(3),
     keywords: z.array(z.string()).min(4),
-    cultural_references: z.record(z.string()),
+    cultural_references: z.record(z.string(), z.unknown()),
     advice: z.string(),
     emoji: z.string(),
     'dall-e-prompt': z.string(),
@@ -68,20 +79,8 @@ export async function analyzeDream(
 
             if (userProfile.ageRange) {
                 // Map age ranges to more descriptive terms for better DALL-E understanding
-                const ageMapping: { [key: string]: string } = {
-                    TEEN_13_17: 'teenage (around 15-16 years old)',
-                    YOUNG_ADULT_18_25:
-                        'young adult (early twenties, around 22-23 years old)',
-                    ADULT_26_35:
-                        'young adult (late twenties to early thirties, around 28-30 years old)',
-                    MIDDLE_AGED_36_50:
-                        'middle-aged adult (late thirties to early forties, around 38-42 years old)',
-                    MATURE_51_65:
-                        'mature adult (early fifties, around 52-55 years old)',
-                    SENIOR_65_PLUS: 'senior (around 65-70 years old)',
-                };
                 const ageDescription =
-                    ageMapping[userProfile.ageRange] ||
+                    AGE_MAPPING[userProfile.ageRange] ||
                     userProfile.ageRange.replace(/_/g, '-').toLowerCase();
                 demographics.push(`age: ${ageDescription}`);
             }
@@ -127,43 +126,31 @@ export async function analyzeDream(
             messages: [
                 {
                     role: 'system',
-                    content: ` You are a dream interpretation expert. Analyze the user's dream and return a JSON object with:
-                    - "title": A short title for the dream.
-                    - "summary": A 3-4 sentence interpretation.
-                    - "emoji": the emoji that represent the dream the most (e.g., 😨)
-                    - "emotions": A list of top 3 emotions detected with related emoji (e.g., ["😨 fear", "🤔 curiosity", "😕 confusion"]).
-                    - "keywords": A list of at least 4 symbolic keywords (e.g., ["ocean", "falling", "darkness"]).
-                    - "cultural_references": Symbolic meanings from 2-3 cultures (e.g., {
-                            "Celtic 🍀": "Forests are often seen as places of transformation and mystery.",
-                            "Greek 🏛️": "Mirrors can represent a portal to self-realization, as seen in the myth of Narcissus.",
-                            "Native American 🛕": "Trees are considered sacred, representing life and wisdom."
-                        }).
-                    - "advice": A short tip for the user based on the dream.
-                    - "dall-e-prompt": A dall-e prompt that must follow this format: "mood, quality, lens, source, description, subject, setting, purpose, desination"; 
-                    example if the user dreamt about flying in the sky: 
-                    "Euphoric and serene, high-quality, photorealistic, 4k cinematic lens, inspired by surrealist art, flying in the sky, a person flying gracefully, above the clouds, vivid sunset, evoke awe and inspiration, art showcase or personal visual journal."
-                    CRITICAL: When generating the dall-e-prompt, if the dream involves people or the dreamer themselves, you MUST be very specific about age and appearance. Use the exact age descriptors from the user demographics (e.g., "young woman in her late twenties" not just "woman", "man in his early thirties" not just "man"). This ensures the generated image accurately represents the user's age group.
-                    SAFETY REQUIREMENTS for dall-e-prompt: Always translate the dall-e-prompt in english if it is not the case in the first place. For nightmares or violent dreams, create symbolic and artistic interpretations instead of literal depictions. Transform violence into symbolic struggle, fighting into overcoming challenges, dangerous animals into majestic creatures in natural settings, and scary elements into mysterious or surreal imagery. Focus on the emotional essence rather than explicit content. Example: "fighting a grizzly bear" becomes "powerful majestic bear in natural forest setting, symbolic of inner strength and wilderness connection".
-                    - "midjourney-prompt": A detailed prompt for generating a MidJourney image based on the dream. We should feel the emotions of the dream through the image.
-                    ${
+                    content: `You are a dream interpretation expert. Analyze the dream and return JSON with:
+                    - "title": Short dream title
+                    - "summary": 3-4 sentence interpretation
+                    - "emoji": Main emoji (e.g., 😨)
+                    - "emotions": 3 top emotions with emoji (e.g., ["😨 fear", "🤔 curiosity"])
+                    - "keywords": 4+ symbolic keywords (e.g., ["ocean", "falling"])
+                    - "cultural_references": 2-3 cultures with meanings (e.g., {"Celtic 🍀": "Transformation"})
+                    - "advice": Short practical tip
+                    - "dall-e-prompt": Format: mood, quality, lens, source, description, subject, setting, purpose (ALWAYS IN ENGLISH)
+                    - "midjourney-prompt": Detailed visual prompt evoking dream emotions${
                         previousDreamsContext.dreamCount > 0
                             ? `
-                    - "recurring_dream_analysis" (OPTIONAL): Only include this field if you detect meaningful connections between the current dream and the user's previous dreams based on the context provided. This should be a JSON object with:
-                        * "hasConnections": boolean indicating if meaningful patterns were found
-                        * "connectedDreams": array of objects with "id", "title", "date", and "connection" describing specific related previous dreams (max 3)
-                        * "patterns": array of strings describing recurring themes, emotions, or symbols
-                        * "interpretation": string explaining what the recurring patterns might mean psychologically or emotionally
-                    IMPORTANT: Only include recurring_dream_analysis if there are GENUINE, MEANINGFUL connections. Don't force connections where none exist. Look for shared emotions, similar themes, recurring symbols, or progressive patterns.`
+                    - "recurring_dream_analysis" (optional): If meaningful connections to previous dreams exist:
+                      * "hasConnections": boolean
+                      * "connectedDreams": max 3 objects with "title", "date", "connection" (NO id field)
+                      * "patterns": recurring themes/symbols
+                      * "interpretation": psychological meaning of patterns`
                             : ''
                     }
-                    Use a neutral, professional tone. Avoid markdown. Keep responses under 250 words.
-                    If not a dream, return { "error": "invalid_dream" }${personalizationContext}${previousDreamsPrompt}
-                    `,
+                    Tone: neutral, professional. Avoid markdown. Safety: For violent dreams, use symbolic/artistic interpretations.
+                    IMPORTANT: Return ALL data in the same language as the input dream. EXCEPT "dall-e-prompt" which MUST ALWAYS be in English.${personalizationContext}${previousDreamsPrompt}`,
                 },
                 { role: 'user', content: prompt },
             ],
         });
-
         logInfo(JSON.stringify(gptResponse));
 
         // Validate response
@@ -192,7 +179,9 @@ export async function analyzeDream(
                 emotions: parsedCleanedResponse.emotions,
                 emoji: parsedCleanedResponse.emoji,
                 keywords: parsedCleanedResponse.keywords,
-                culturalReferences: parsedCleanedResponse.cultural_references,
+                culturalReferences: JSON.parse(
+                    JSON.stringify(parsedCleanedResponse.cultural_references),
+                ),
                 advice: parsedCleanedResponse.advice,
                 dallEPrompt: parsedCleanedResponse['dall-e-prompt'],
                 midjourneyPrompt: parsedCleanedResponse['midjourney-prompt'],
@@ -200,11 +189,45 @@ export async function analyzeDream(
             },
         });
 
+        // Process recurring dream analysis if present - match AI-identified titles to actual dream IDs
+        let recurringAnalysisWithIds = undefined;
+        if (parsedCleanedResponse.recurring_dream_analysis?.hasConnections) {
+            const recurringAnalysis =
+                parsedCleanedResponse.recurring_dream_analysis;
+
+            // Build a map of dream titles to IDs from previousDreamsContext for O(1) lookup
+            const titleToIdMap = new Map<string, string>();
+            for (const dream of previousDreamsContext.summaries) {
+                titleToIdMap.set(dream.title.toLowerCase(), dream.id);
+            }
+
+            // Match AI-identified dream titles to actual dream IDs using the pre-built map
+            const connectedDreamsWithIds = recurringAnalysis.connectedDreams
+                .map((aiDream) => {
+                    const id = titleToIdMap.get(aiDream.title.toLowerCase());
+                    return id ? { ...aiDream, id } : null;
+                })
+                .filter(
+                    (
+                        dream,
+                    ): dream is (typeof recurringAnalysis.connectedDreams)[number] & {
+                        id: string;
+                    } => dream !== null,
+                );
+
+            // Only include if we successfully matched at least one dream
+            if (connectedDreamsWithIds.length > 0) {
+                recurringAnalysisWithIds = {
+                    ...recurringAnalysis,
+                    connectedDreams: connectedDreamsWithIds,
+                };
+            }
+        }
+
         // Add recurring dream analysis to response if present
         const dreamWithRecurringAnalysis = {
             ...dream,
-            recurringDreamAnalysis:
-                parsedCleanedResponse.recurring_dream_analysis || undefined,
+            recurringDreamAnalysis: recurringAnalysisWithIds || undefined,
         };
 
         return dreamWithRecurringAnalysis;

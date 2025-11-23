@@ -38,6 +38,9 @@ import dreamApi from '@/api/dreamApi';
 
 const IMAGE_HEIGHT = 256; // same as DreamImage height defined below
 
+// Global set tracking dreams currently being generated to avoid duplicate API calls
+const generatingDreamIds = new Set<string>();
+
 const generateDalleImage = async (
   dreamId: string,
   dallEPrompt: string,
@@ -128,13 +131,17 @@ export default function InterpretationScreen() {
       return;
     }
 
-    // Check if we're already generating an image for any dream
-    if (isGeneratingImage) {
-      console.log('Already generating image, skipping...');
+    // Prevent duplicate generation across component instances using global set
+    if (generatingDreamIds.has(dreamData.id)) {
+      console.log(
+        `Skipping duplicate DALL-E generation for dream ID: ${dreamData.id}`
+      );
+      lastProcessedDreamId.current = dreamData.id;
       return;
     }
 
-    // Mark this dream as processed and start generation
+    // Mark this dream as being generated
+    generatingDreamIds.add(dreamData.id);
     lastProcessedDreamId.current = dreamData.id;
     setIsGeneratingImage(true);
 
@@ -169,6 +176,11 @@ export default function InterpretationScreen() {
       // Don't reset lastProcessedDreamId on error - keep it marked as processed
       // to avoid infinite retry loops
     } finally {
+      // Clear the global in-progress marker so future attempts can run if needed
+      if (dreamData && generatingDreamIds.has(dreamData.id)) {
+        generatingDreamIds.delete(dreamData.id);
+      }
+
       setIsGeneratingImage(false);
     }
   }, [dreamData?.id, dreamData?.dallEPrompt, getToken]);

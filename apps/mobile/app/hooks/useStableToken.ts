@@ -8,54 +8,58 @@ import { useCallback, useRef } from 'react';
  * caused by getToken being recreated on every render
  */
 export const useStableToken = () => {
-    const { getToken: authGetToken } = useAuth();
-    const tokenCache = useRef<{ token: string | null; timestamp: number }>({ 
-        token: null, 
-        timestamp: 0 
-    });
-    
-    // Cache tokens for 5 minutes to reduce auth overhead
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-    
-    const getToken = useCallback(async (): Promise<string | null> => {
-        const now = Date.now();
-        const cachedToken = tokenCache.current;
-        
-        // Return cached token if still valid
-        if (cachedToken.token && (now - cachedToken.timestamp < CACHE_DURATION)) {
-            return cachedToken.token;
-        }
-        
-        try {
-            const token = await authGetToken();
-            
-            // Cache the new token
-            tokenCache.current = {
-                token,
-                timestamp: now
-            };
-            
-            return token;
-        } catch (error) {
-            console.error('Error getting token:', error);
-            return null;
-        }
-    }, [authGetToken]);
-    
-    // Force refresh token (bypass cache)
-    const refreshToken = useCallback(async (): Promise<string | null> => {
-        try {
-            const token = await authGetToken();
-            tokenCache.current = {
-                token,
-                timestamp: Date.now()
-            };
-            return token;
-        } catch (error) {
-            console.error('Error refreshing token:', error);
-            return null;
-        }
-    }, [authGetToken]);
-    
-    return { getToken, refreshToken };
+  const { getToken: authGetToken } = useAuth();
+  const tokenCache = useRef<{ token: string | null; timestamp: number }>({
+    token: null,
+    timestamp: 0,
+  });
+
+  // Cache tokens for 5 minutes to reduce auth overhead
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  const getToken = useCallback(async (): Promise<string | null> => {
+    const now = Date.now();
+    const cachedToken = tokenCache.current;
+
+    // Return cached token if still valid
+    if (cachedToken.token && now - cachedToken.timestamp < CACHE_DURATION) {
+      return cachedToken.token;
+    }
+
+    try {
+      const token = await authGetToken();
+
+      // Cache the new token
+      tokenCache.current = {
+        token,
+        timestamp: now,
+      };
+
+      return token;
+    } catch (error) {
+      console.error('Error getting token:', error);
+      return null;
+    }
+  }, [authGetToken]);
+
+  // Force refresh token (bypass cache)
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const token = await authGetToken();
+      tokenCache.current = {
+        token,
+        timestamp: Date.now(),
+      };
+      return token;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    }
+  }, [authGetToken]);
+
+  return { getToken, refreshToken };
 };
+
+// Dummy default export to prevent Expo router warnings about missing default export
+// This file should not be treated as a route
+export default null;
