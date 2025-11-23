@@ -23,12 +23,12 @@ const generateDallEImage = async (req: Request, res: Response) => {
         );
 
         if (dallERes && !(dallERes instanceof Error)) {
-            logInfo(
-                `New dream image generated: ${JSON.stringify(
-                    dallERes.imageUrl,
-                )}`,
-            );
-            res.status(StatusCodes.OK).json(dallERes);
+            logInfo(`New dream image generated for dream ID: ${dallERes.id}`);
+            res.status(StatusCodes.OK).json({
+                id: dallERes.id,
+                imageBase64: dallERes.imageBase64,
+                revisedPrompt: dallERes.revisedPrompt,
+            });
         } else if (dallERes instanceof Error) {
             logError(dallERes.message);
             res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(

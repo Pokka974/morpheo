@@ -2,19 +2,25 @@ import { PrismaClient } from '@prisma/client';
 import { OpenAI } from 'openai';
 import { z } from 'zod';
 import { logError, logInfo } from './logger.service';
-import { getPreviousDreamsContext, findSimilarDreams } from './dreamHistory.service';
+import {
+    getPreviousDreamsContext,
+    findSimilarDreams,
+} from './dreamHistory.service';
 
 const prisma = new PrismaClient();
+const GTP_MODEL = 'gpt-5-mini';
 
 // Zod schema for recurring dream analysis
 const RecurringDreamAnalysisSchema = z.object({
     hasConnections: z.boolean(),
-    connectedDreams: z.array(z.object({
-        id: z.string(),
-        title: z.string(),
-        date: z.string(),
-        connection: z.string(),
-    })),
+    connectedDreams: z.array(
+        z.object({
+            id: z.string(),
+            title: z.string(),
+            date: z.string(),
+            connection: z.string(),
+        }),
+    ),
     patterns: z.array(z.string()),
     interpretation: z.string(),
 });
@@ -51,37 +57,58 @@ export async function analyzeDream(
         let personalizationContext = '';
         if (userProfile) {
             const demographics = [];
-            
+
             if (userProfile.gender) {
-                demographics.push(`gender: ${userProfile.gender.toLowerCase().replace('_', ' ')}`);
+                demographics.push(
+                    `gender: ${userProfile.gender
+                        .toLowerCase()
+                        .replace('_', ' ')}`,
+                );
             }
-            
+
             if (userProfile.ageRange) {
                 // Map age ranges to more descriptive terms for better DALL-E understanding
                 const ageMapping: { [key: string]: string } = {
-                    'TEEN_13_17': 'teenage (around 15-16 years old)',
-                    'YOUNG_ADULT_18_25': 'young adult (early twenties, around 22-23 years old)',
-                    'ADULT_26_35': 'young adult (late twenties to early thirties, around 28-30 years old)',
-                    'MIDDLE_AGED_36_50': 'middle-aged adult (late thirties to early forties, around 38-42 years old)',
-                    'MATURE_51_65': 'mature adult (early fifties, around 52-55 years old)',
-                    'SENIOR_65_PLUS': 'senior (around 65-70 years old)'
+                    TEEN_13_17: 'teenage (around 15-16 years old)',
+                    YOUNG_ADULT_18_25:
+                        'young adult (early twenties, around 22-23 years old)',
+                    ADULT_26_35:
+                        'young adult (late twenties to early thirties, around 28-30 years old)',
+                    MIDDLE_AGED_36_50:
+                        'middle-aged adult (late thirties to early forties, around 38-42 years old)',
+                    MATURE_51_65:
+                        'mature adult (early fifties, around 52-55 years old)',
+                    SENIOR_65_PLUS: 'senior (around 65-70 years old)',
                 };
-                const ageDescription = ageMapping[userProfile.ageRange] || userProfile.ageRange.replace(/_/g, '-').toLowerCase();
+                const ageDescription =
+                    ageMapping[userProfile.ageRange] ||
+                    userProfile.ageRange.replace(/_/g, '-').toLowerCase();
                 demographics.push(`age: ${ageDescription}`);
             }
-            
-            if (userProfile.culturalBackground && userProfile.culturalBackground.length > 0) {
-                demographics.push(`cultural background: ${userProfile.culturalBackground.join(', ')}`);
+
+            if (
+                userProfile.culturalBackground &&
+                userProfile.culturalBackground.length > 0
+            ) {
+                demographics.push(
+                    `cultural background: ${userProfile.culturalBackground.join(
+                        ', ',
+                    )}`,
+                );
             }
-            
+
             if (userProfile.location) {
                 demographics.push(`location: ${userProfile.location}`);
             }
-            
+
             if (demographics.length > 0) {
-                personalizationContext = `\n\nUser demographics for personalization: ${demographics.join('; ')}.`;
+                personalizationContext = `\n\nUser demographics for personalization: ${demographics.join(
+                    '; ',
+                )}.`;
                 if (userProfile.interpretationStyle) {
-                    personalizationContext += ` Preferred interpretation style: ${userProfile.interpretationStyle.toLowerCase().replace('_', ' ')}.`;
+                    personalizationContext += ` Preferred interpretation style: ${userProfile.interpretationStyle
+                        .toLowerCase()
+                        .replace('_', ' ')}.`;
                 }
                 personalizationContext += ` IMPORTANT: When generating the dall-e-prompt, if the dream involves people or the dreamer themselves, be very specific about their appearance using the user's exact demographics above. Use descriptive terms like "young woman in her late twenties" or "man in his early thirties" rather than just age ranges.`;
             }
@@ -95,7 +122,7 @@ export async function analyzeDream(
 
         // OpenAI request
         const gptResponse = await openai.chat.completions.create({
-            model: 'gpt-4.1',
+            model: GTP_MODEL,
             response_format: { type: 'json_object' },
             messages: [
                 {
@@ -116,15 +143,19 @@ export async function analyzeDream(
                     example if the user dreamt about flying in the sky: 
                     "Euphoric and serene, high-quality, photorealistic, 4k cinematic lens, inspired by surrealist art, flying in the sky, a person flying gracefully, above the clouds, vivid sunset, evoke awe and inspiration, art showcase or personal visual journal."
                     CRITICAL: When generating the dall-e-prompt, if the dream involves people or the dreamer themselves, you MUST be very specific about age and appearance. Use the exact age descriptors from the user demographics (e.g., "young woman in her late twenties" not just "woman", "man in his early thirties" not just "man"). This ensures the generated image accurately represents the user's age group.
-                    SAFETY REQUIREMENTS for dall-e-prompt: For nightmares or violent dreams, create symbolic and artistic interpretations instead of literal depictions. Transform violence into symbolic struggle, fighting into overcoming challenges, dangerous animals into majestic creatures in natural settings, and scary elements into mysterious or surreal imagery. Focus on the emotional essence rather than explicit content. Example: "fighting a grizzly bear" becomes "powerful majestic bear in natural forest setting, symbolic of inner strength and wilderness connection".
+                    SAFETY REQUIREMENTS for dall-e-prompt: Always translate the dall-e-prompt in english if it is not the case in the first place. For nightmares or violent dreams, create symbolic and artistic interpretations instead of literal depictions. Transform violence into symbolic struggle, fighting into overcoming challenges, dangerous animals into majestic creatures in natural settings, and scary elements into mysterious or surreal imagery. Focus on the emotional essence rather than explicit content. Example: "fighting a grizzly bear" becomes "powerful majestic bear in natural forest setting, symbolic of inner strength and wilderness connection".
                     - "midjourney-prompt": A detailed prompt for generating a MidJourney image based on the dream. We should feel the emotions of the dream through the image.
-                    ${previousDreamsContext.dreamCount > 0 ? `
+                    ${
+                        previousDreamsContext.dreamCount > 0
+                            ? `
                     - "recurring_dream_analysis" (OPTIONAL): Only include this field if you detect meaningful connections between the current dream and the user's previous dreams based on the context provided. This should be a JSON object with:
                         * "hasConnections": boolean indicating if meaningful patterns were found
                         * "connectedDreams": array of objects with "id", "title", "date", and "connection" describing specific related previous dreams (max 3)
                         * "patterns": array of strings describing recurring themes, emotions, or symbols
                         * "interpretation": string explaining what the recurring patterns might mean psychologically or emotionally
-                    IMPORTANT: Only include recurring_dream_analysis if there are GENUINE, MEANINGFUL connections. Don't force connections where none exist. Look for shared emotions, similar themes, recurring symbols, or progressive patterns.` : ''}
+                    IMPORTANT: Only include recurring_dream_analysis if there are GENUINE, MEANINGFUL connections. Don't force connections where none exist. Look for shared emotions, similar themes, recurring symbols, or progressive patterns.`
+                            : ''
+                    }
                     Use a neutral, professional tone. Avoid markdown. Keep responses under 250 words.
                     If not a dream, return { "error": "invalid_dream" }${personalizationContext}${previousDreamsPrompt}
                     `,
@@ -172,12 +203,27 @@ export async function analyzeDream(
         // Add recurring dream analysis to response if present
         const dreamWithRecurringAnalysis = {
             ...dream,
-            recurringDreamAnalysis: parsedCleanedResponse.recurring_dream_analysis || undefined,
+            recurringDreamAnalysis:
+                parsedCleanedResponse.recurring_dream_analysis || undefined,
         };
 
         return dreamWithRecurringAnalysis;
     } catch (error) {
         logError(error as string);
         throw error;
+    }
+}
+
+export async function isPromptSafe(prompt: string, openai: OpenAI) {
+    try {
+        const response = await openai.moderations.create({
+            input: prompt,
+        });
+
+        const results = response.results[0];
+        return !results.flagged;
+    } catch (error) {
+        logError(`Moderation check failed: ${error}`);
+        throw new Error('Moderation check failed');
     }
 }

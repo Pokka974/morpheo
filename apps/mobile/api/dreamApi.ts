@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 
 const postChatGPT = async (prompt: string, token: string) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000); // 10-second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
 
   try {
     const response = await fetch(
@@ -34,9 +34,54 @@ const postChatGPT = async (prompt: string, token: string) => {
     const data = JSON.parse(rawResponse);
 
     return await data;
-  } catch (error) {
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error('Request timeout after 60 seconds');
+      throw new Error('Request timeout - the server took too long to respond');
+    }
     console.error('Fetch Error:', error);
     throw error;
+  }
+};
+
+const isPromptSafe = async (prompt: string, token: string) => {
+  try {
+    const response = await fetch(
+      `${Constants.expoConfig?.extra?.apiUrl}/chatgpt/isItSafe`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt }),
+      }
+    );
+
+    const contentType = response.headers.get('content-type');
+
+    // Always return true if content-type is not JSON (handles 404, 500, etc.)
+    if (!contentType || !contentType.includes('application/json')) {
+      return true;
+    }
+
+    if (!response.ok) {
+      // For error status codes, still try to parse as JSON, but fallback to true
+      try {
+        const data = await response.json();
+        return data.isSafe ?? true;
+      } catch {
+        return true;
+      }
+    }
+
+    const data = await response.json();
+    return data.isSafe ?? true;
+  } catch (error) {
+    console.error('Error checking prompt safety:', error);
+    // If safety check fails for any reason, allow the request to proceed (assume safe)
+    return true;
   }
 };
 
@@ -74,7 +119,7 @@ const updateDreamImagePath = async (
 
 const getAllDreams = async (token: string) => {
   const url = `${Constants.expoConfig?.extra?.apiUrl}/dreams/all`;
-  
+
   try {
     const response = await fetch(url, {
       method: 'GET',
@@ -83,12 +128,12 @@ const getAllDreams = async (token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch dreams');
     }
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -99,7 +144,7 @@ const getAllDreams = async (token: string) => {
 
 const getDreamById = async (dreamId: string, token: string) => {
   const url = `${Constants.expoConfig?.extra?.apiUrl}/dreams/${dreamId}`;
-  
+
   try {
     const response = await fetch(url, {
       method: 'GET',
@@ -108,12 +153,12 @@ const getDreamById = async (dreamId: string, token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch dream');
     }
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -170,6 +215,7 @@ const exportUserData = async (token: string) => {
 
 export default {
   postChatGPT,
+  isPromptSafe,
   updateDreamImagePath,
   getAllDreams,
   getDreamById,

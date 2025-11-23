@@ -41,4 +41,40 @@ const router = Router();
 
 router.post('/', requireAuth(), chatGptController.createChatGptCompletion);
 
+/**
+ * @swagger
+ * /chatgpt/isItSafe:
+ *   post:
+ *     summary: Check if a prompt is safe using ChatGPT moderation
+ *     tags: [ChatGPT]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               prompt:
+ *                 type: string
+ *                 description: The prompt to be checked for safety.
+ *                 example: "Describe a violent scene."
+ *     responses:
+ *       200:
+ *         description: Prompt safety check completed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isSafe:
+ *                   type: boolean
+ *                   description: Indicates if the prompt is safe.
+ *                   example: true
+ *       400:
+ *         description: Bad request. Possible reasons include missing or invalid prompt.
+ */
+router.post('/isItSafe', requireAuth(), chatGptController.checkIfPromptIsSafe);
+
 export default router;
